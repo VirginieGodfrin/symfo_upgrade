@@ -28,13 +28,19 @@ class LoginFormAuthenticator extends AbstractFormLoginAuthenticator
         $this->passwordEncoder = $passwordEncoder;
     }
 
+    // Dans Symfony 4, supports () est désormais appelé à chaque requête. 
+    // Si elle renvoie false, l'authentificateur est fait comme avant. 
+    // Mais si elle retourne true, getCredentials () est appelée. 
+    // Nous divisons le travail de getCredentials () en deux méthodes.
+
+    public function supports(Request $request) {
+        return $request->getPathInfo() == '/login' && $request->isMethod('POST'); 
+    }
+
+
     public function getCredentials(Request $request)
     {
-        $isLoginSubmit = $request->getPathInfo() == '/login' && $request->isMethod('POST');
-        if (!$isLoginSubmit) {
-            // skip authentication
-            return;
-        }
+        
 
         $form = $this->formFactory->create(LoginForm::class);
         $form->handleRequest($request);
