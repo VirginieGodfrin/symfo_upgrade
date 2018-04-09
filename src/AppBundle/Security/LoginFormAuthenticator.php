@@ -2,23 +2,33 @@
 
 namespace AppBundle\Security;
 
-use AppBundle\Form\LoginForm;
+use App\Entity\User;
+use App\Form\LoginForm;
 use Doctrine\ORM\EntityManager;
 use Symfony\Component\Form\FormFactoryInterface;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\RouterInterface;
+use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Security;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
 use Symfony\Component\Security\Guard\Authenticator\AbstractFormLoginAuthenticator;
+use Symfony\Component\Security\Http\Util\TargetPathTrait;
+
+
 
 class LoginFormAuthenticator extends AbstractFormLoginAuthenticator
 {
+    use TargetPathTrait;
+    
     private $formFactory;
     private $em;
     private $router;
     private $passwordEncoder;
+    
 
     public function __construct(FormFactoryInterface $formFactory, EntityManager $em, RouterInterface $router, UserPasswordEncoderInterface $passwordEncoder)
     {
@@ -36,7 +46,6 @@ class LoginFormAuthenticator extends AbstractFormLoginAuthenticator
     public function supports(Request $request) {
         return $request->getPathInfo() == '/login' && $request->isMethod('POST'); 
     }
-
 
     public function getCredentials(Request $request)
     {
@@ -73,13 +82,18 @@ class LoginFormAuthenticator extends AbstractFormLoginAuthenticator
         return false;
     }
 
+    public function onAuthenticationSuccess(Request $request, TokenInterface $token, $providerKey)
+    {
+        if ($targetPath = $this->getTargetPath($request->getSession(), 'main')) {
+            return new RedirectResponse($targetPath);
+        }
+
+        return new RedirectResponse($this->router->generate('homepage'));
+    }
+
     protected function getLoginUrl()
     {
         return $this->router->generate('security_login');
     }
 
-    protected function getDefaultSuccessRedirectUrl()
-    {
-        return $this->router->generate('homepage');
-    }
 }
